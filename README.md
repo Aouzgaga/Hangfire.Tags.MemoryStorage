@@ -1,5 +1,5 @@
 # Hangfire.Tags.MemoryStorage
-Add tags to Hangfire backgroundjobs stored in memory
+Add tags (https://github.com/face-it/Hangfire.Tags) to Hangfire backgroundjobs stored in memory (https://github.com/perrich/Hangfire.MemoryStorage).
 
 In .NET Core's Startup.cs:
 ```c#
