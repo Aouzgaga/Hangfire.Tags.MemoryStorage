@@ -6,6 +6,7 @@
     <Version>0.1.0</Version>
     <Authors>Aouzgaga</Authors>
     <Description>Enables Tags (https://github.com/face-it/Hangfire.Tags) for MemoryStorage (https://github.com/perrich/Hangfire.MemoryStorage)</Description>
+    <PackageProjectUrl>https://github.com/Aouzgaga/Hangfire.Tags.MemoryStorage</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
