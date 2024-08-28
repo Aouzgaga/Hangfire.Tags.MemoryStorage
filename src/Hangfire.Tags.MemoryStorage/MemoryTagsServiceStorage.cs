@@ -8,17 +8,13 @@ using Hangfire.Tags.Storage;
 
 namespace Hangfire.Tags.MemoryStorage
 {
-    public class MemoryTagsServiceStorage : ITagsServiceStorage
+    public class MemoryTagsServiceStorage : ObsoleteBaseStorage, ITagsServiceStorage
     {
-        public MemoryTagsServiceStorage()
+        public override IEnumerable<TagDto> SearchWeightedTags(JobStorage jobStorage, string tag, string setKey)
         {
-        }
-
-        public IEnumerable<TagDto> SearchWeightedTags(string tag, string setKey)
-        {
-            var storage = GetStorage();
             var key = tag == null ? setKey : $"{setKey}:{tag}";
-            var values = storage.GetAllItemsFromSet(key);
+            var connection = GetConnection(jobStorage);
+            var values = connection.GetAllItemsFromSet(key);
             return values.GroupBy(s => s).Select(g => new TagDto
             {
                 Tag = g.Key,
@@ -26,39 +22,33 @@ namespace Hangfire.Tags.MemoryStorage
                 Percentage = g.LongCount() / values.Count() * 100
             });
         }
-
-        private Hangfire.MemoryStorage.MemoryStorageConnection GetStorage()
+        private Hangfire.MemoryStorage.MemoryStorageConnection GetConnection(JobStorage storage)
         {
-            return JobStorage.Current.GetConnection() as Hangfire.MemoryStorage.MemoryStorageConnection;
+            return storage.GetConnection() as Hangfire.MemoryStorage.MemoryStorageConnection;
         }
 
-        public IEnumerable<string> SearchTags(string tag, string setKey)
+        public override int GetJobCount(JobStorage jobStorage, string[] tags, string stateName = null)
         {
-            throw new NotSupportedException();
+            var connection = GetConnection(jobStorage);
+            return tags.Sum(t => (int)connection.GetSetCount(t));
         }
-
-        public int GetJobCount(string[] tags, string stateName = null)
+      
+        public override IDictionary<string, int> GetJobStateCount(JobStorage jobStorage, string[] tags, int maxTags = 50)
         {
-            var storage = GetStorage();
-            return tags.Sum(t => (int)storage.GetSetCount(t));
-        }
-
-        public IDictionary<string, int> GetJobStateCount(string[] tags, int maxTags = 50)
-        {
-            var storage = GetStorage();
+            var connection = GetConnection(jobStorage);
             return tags
-                .SelectMany(t => storage.GetAllItemsFromSet(t))
-                .GroupBy(j => storage.GetJobData(j).State)
+                .SelectMany(t => connection.GetAllItemsFromSet(t))
+                .GroupBy(j => connection.GetJobData(j).State)
                 .ToDictionary(g => g.Key, g => g.Count());
         }
 
-        public JobList<MatchingJobDto> GetMatchingJobs(string[] tags, int from, int count, string stateName = null)
+        public override JobList<MatchingJobDto> GetMatchingJobs(JobStorage jobStorage, string[] tags, int from, int count, string stateName = null)
         {
-            var storage = GetStorage();
-            var monitoringApi = JobStorage.Current.GetMonitoringApi();
+            var monitoringApi = jobStorage.GetMonitoringApi();
 
-            var items = tags.SelectMany(t => storage.GetAllItemsFromSet(t));
-            var jobs = items.GroupBy(i => i).Select(g => new { Job = g.Key, JobData = storage.GetJobData(g.Key) }).OrderBy(j => j.Job).AsEnumerable();
+            var connection = GetConnection(jobStorage);
+            var items = tags.SelectMany(t => connection.GetAllItemsFromSet(t));
+            var jobs = items.GroupBy(i => i).Select(g => new { Job = g.Key, JobData = connection.GetJobData(g.Key) }).OrderBy(j => j.Job).AsEnumerable();
 
             if (!string.IsNullOrEmpty(stateName))
             {
@@ -77,9 +67,14 @@ namespace Hangfire.Tags.MemoryStorage
             return new JobList<MatchingJobDto>(dtos);
         }
 
-        public ITagsTransaction GetTransaction(IWriteOnlyTransaction transaction)
+        public override ITagsTransaction GetTransaction(IWriteOnlyTransaction transaction)
         {
             return new MemoryTagsTransaction();
+        }
+
+        public override IEnumerable<string> SearchRelatedTags(JobStorage jobStorage, string tag, string setKey = "tags")
+        {
+            throw new NotImplementedException();
         }
     }
 }

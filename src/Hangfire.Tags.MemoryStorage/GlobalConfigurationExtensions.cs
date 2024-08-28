@@ -1,4 +1,6 @@
-﻿namespace Hangfire.Tags.MemoryStorage
+﻿using Hangfire.Tags.Dashboard;
+
+namespace Hangfire.Tags.MemoryStorage
 {
     /// <summary>
     /// Provides extension methods to setup Hangfire.Tags
@@ -11,11 +13,13 @@
         /// <param name="configuration">Global configuration</param>
         /// <param name="options">Options for tags</param>
         /// <returns></returns>
-        public static IGlobalConfiguration UseTagsWithMemory(this IGlobalConfiguration configuration, TagsOptions options = null)
+        public static IGlobalConfiguration UseTagsWithMemory(this IGlobalConfiguration configuration, TagsOptions options = null, JobStorage jobStorage = null)
         {
             options = options ?? new TagsOptions();
 
-            options.Storage = new MemoryTagsServiceStorage();
+            var storage = new MemoryTagsServiceStorage();
+            (jobStorage ?? JobStorage.Current).Register(options, storage);
+
             var config = configuration.UseTags(options);
             return config;
         }
