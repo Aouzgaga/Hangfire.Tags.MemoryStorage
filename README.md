@@ -17,5 +17,5 @@ Otherwise,
 ```c#
 GlobalConfiguration.Configuration
     .UseTagsWithMemory()
-    .UseMemoryStorage("connectionSting");
+    .UseMemoryStorage();
 ```
